@@ -1,0 +1,37 @@
+#!/bin/bash
+
+# Weather app in Bash using Open-Meteo API
+
+# Function to get weather data
+get_weather() {
+    CITY=$1
+    # Geocode the city to get latitude and longitude
+    GEOCODE_RESPONSE=$(curl -s "https://nominatim.openstreetmap.org/search?q=${CITY}&format=json&limit=1")
+    LAT=$(echo "$GEOCODE_RESPONSE" | jq -r '.[0].lat')
+    LON=$(echo "$GEOCODE_RESPONSE" | jq -r '.[0].lon')
+    
+    if [[ -z "$LAT" || -z "$LON" ]]; then
+        echo "City not found."
+        exit 1
+    fi
+
+    # Fetch weather data
+    WEATHER_RESPONSE=$(curl -s "https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}&current_weather=true")
+    WEATHER=$(echo "$WEATHER_RESPONSE" | jq -r '.current_weather.weathercode')
+    TEMP=$(echo "$WEATHER_RESPONSE" | jq -r '.current_weather.temperature')
+    WIND=$(echo "$WEATHER_RESPONSE" | jq -r '.current_weather.windspeed')
+
+    echo "Weather in $CITY:"
+    echo "Weather Code: $WEATHER"
+    echo "Temperature: $TEMP°C"
+    echo "Wind Speed: $WIND m/s"
+}
+
+# Check if city is provided
+if [ -z "$1" ]; then
+    echo "Usage: $0 <city>"
+    exit 1
+fi
+
+# Fetch and display weather
+get_weather "$1"
